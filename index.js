@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors')
 require('dotenv').config()
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5001;
 
 
 app.use(cors())
@@ -10,7 +10,7 @@ app.use(express.json())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jweumb2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
@@ -29,6 +29,7 @@ async function run() {
     // await client.connect();
 
     const usersCollection = client.db('zapChat').collection('users')
+    const conversationsCollection = client.db('zapChat').collection('conversationsCollection')
 
     app.post('/users', async(req, res)=>{
         const user = req.body
@@ -40,6 +41,66 @@ async function run() {
         const result = await usersCollection.insertOne(user)
         res.send(result)
     })
+    
+    app.delete('/users/:id', async(req, res)=>{
+        const id = req.params.id
+        const query = {userId: id}
+        const result = await usersCollection.deleteOne(query)
+        res.send(result)
+    })
+
+    app.get('/my-info/:id', async(req, res)=>{
+        const id = req.params.id
+        const query = {userId: id}
+        const result = await usersCollection.findOne(query)
+        res.send(result)
+    })
+
+    app.patch('/my-info/image/:id', async(req, res)=>{
+        const id = req.params.id
+        const query = {userId: id}
+        const newValues = { $set: {photoURL: req.body.photoURL}}
+        const result = await usersCollection.updateOne(query, newValues)
+        res.send(result)
+    })
+
+    app.patch('/my-info/name/:id', async(req, res)=>{
+        const id = req.params.id
+        const query = {userId: id}
+        const newValues = { $set: {name: req.body.name}}
+        const result = await usersCollection.updateOne(query, newValues)
+        res.send(result)
+    })
+
+    app.patch('/my-info/des/:id', async(req, res)=>{
+        const id = req.params.id
+        const query = {userId: id}
+        const newValues = { $set: {des: req.body.des}}
+        const result = await usersCollection.updateOne(query, newValues)
+        res.send(result)
+    })
+
+  app.get("/users/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { userId: id };
+    const result = await usersCollection.findOne(query, {
+      projection: { name: 1, email: 1, photoURL: 1, userId: 1, status: 1 },
+    });
+    res.send(result);
+  });
+
+  app.get("/my-conversations/:id", async (req, res) => {
+    const id = req.params.id;
+    const query = { members: { $in: [id] } };
+    const result = await conversationsCollection.find(query).toArray();
+    if (result.length > 0) {
+      return res.send(result);
+    }
+    console.log(id);
+    res.send('No conversation found');
+  });
+  
+  
 
 
 
