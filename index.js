@@ -91,22 +91,19 @@ async function run() {
 
   app.get("/my-conversations/:id", async (req, res) => {
     const id = req.params.id;
-    const query = { members: { $in: [id] } };
+    const query = { members: id };
     const result = await conversationsCollection.find(query).toArray();
-    if (result.length > 0) {
-      return res.send(result);
-    }
-    console.log(id);
-    res.send('No conversation found');
+    res.json(result);
   });
+  
   
   
 
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
