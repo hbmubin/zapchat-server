@@ -74,7 +74,7 @@ async function run() {
         res.send(result)
     })
     
-    app.delete('/users/:id', async(req, res)=>{
+    app.delete('/users/:id', verifyToken, async(req, res)=>{
         const id = req.params.id
         const query = {userId: id}
         const result = await usersCollection.deleteOne(query)
@@ -89,7 +89,7 @@ async function run() {
     })
 
 
-    app.patch('/my-info/image/:id', async(req, res)=>{
+    app.patch('/my-info/image/:id', verifyToken, async(req, res)=>{
         const id = req.params.id
         const query = {userId: id}
         const newValues = { $set: {photoURL: req.body.photoURL}}
@@ -97,7 +97,7 @@ async function run() {
         res.send(result)
     })
 
-    app.patch('/my-info/name/:id', async(req, res)=>{
+    app.patch('/my-info/name/:id', verifyToken, async(req, res)=>{
         const id = req.params.id
         const query = {userId: id}
         const newValues = { $set: {name: req.body.name}}
@@ -105,7 +105,7 @@ async function run() {
         res.send(result)
     })
 
-    app.patch('/my-info/des/:id', async(req, res)=>{
+    app.patch('/my-info/des/:id', verifyToken, async(req, res)=>{
         const id = req.params.id
         const query = {userId: id}
         const newValues = { $set: {des: req.body.des}}
@@ -122,14 +122,14 @@ async function run() {
     res.send(result);
   });
 
-  app.get("/my-conversations/:id", async (req, res) => {
+  app.get("/my-conversations/:id", verifyToken, async (req, res) => {
     const id = req.params.id;
     const query = { members: id };
     const result = await conversationsCollection.find(query).toArray();
     res.json(result);
   });
   
-  app.patch('/chat/:id', verifyToken, async (req, res) => {
+  app.patch('/chat/:id', verifyToken, verifyToken, async (req, res) => {
     const id = req.params.id;
     const message = req.body;
     const query = { _id: new ObjectId(id) };
