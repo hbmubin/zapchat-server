@@ -2,15 +2,22 @@ const express = require('express');
 const app = express();
 const cors = require('cors')
 require('dotenv').config()
-const port = process.env.PORT || 5001;
+const jwt = require('jsonwebtoken')
+const port = process.env.PORT || 5000;
 
 
 app.use(cors())
 app.use(express.json())
 
+app.use(cors({
+    origin: '*',
+    credentials: true
+}))
+
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const req = require('express/lib/request');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.jweumb2.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 
@@ -31,6 +38,29 @@ async function run() {
     const usersCollection = client.db('zapChat').collection('users')
     const conversationsCollection = client.db('zapChat').collection('conversationsCollection')
 
+    app.post('/jwt', (req, res) => {
+        const user = req.body
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+        res.send({ token })
+    })
+
+    const verifyToken = (req, res, next) => {
+      // console.log(req.headers)
+      if(!req.headers.authorization) {
+        return res.status(401).send({message: 'access forbidden'})
+      }
+      const token = req.headers.authorization.split(' ')[1]
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err){
+          return res.status(403).send({message: 'access forbidden'})
+        }
+        // console.log(`inside verify token ${token}`) 
+        req.decoded = decoded
+        next()
+      })
+
+    }
+
     app.post('/users', async(req, res)=>{
         const user = req.body
         const query = {email: user.email}
@@ -49,12 +79,13 @@ async function run() {
         res.send(result)
     })
 
-    app.get('/my-info/:id', async(req, res)=>{
+    app.get('/my-info/:id', verifyToken, async(req, res)=>{
         const id = req.params.id
         const query = {userId: id}
         const result = await usersCollection.findOne(query)
         res.send(result)
     })
+
 
     app.patch('/my-info/image/:id', async(req, res)=>{
         const id = req.params.id
@@ -96,14 +127,25 @@ async function run() {
     res.json(result);
   });
   
+  app.patch('/chat/:id', verifyToken, async (req, res) => {
+    const id = req.params.id;
+    const message = req.body;
+    const query = { _id: new ObjectId(id) };
+    const updateDoc = {
+      $push: { messages: message },
+    };
+    const result = await conversationsCollection.updateOne(query, updateDoc);
+    res.send(result);
+  });
+  
   
   
 
 
 
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
